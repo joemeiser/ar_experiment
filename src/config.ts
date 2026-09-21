@@ -13,12 +13,18 @@ export interface ObjectSettings {
   groundClearanceM: number;
 
   /**
-   * URL of a .glb/.gltf to show instead of the cube. Relative URLs are
-   * resolved against the site base (put files in /public and use e.g. 'models/sculpture.glb').
+   * URL of a .glb, .gltf or .obj to show instead of the cube. Relative URLs are
+   * resolved against the site base: put files in public/models/ and use e.g.
+   * 'models/sculpture.glb'. An .obj's .mtl and textures go in the same folder.
    * null = show the test cube.
    */
   modelUrl: string | null;
-  /** Uniform scale applied to the loaded model. */
+  /**
+   * Scale the model so it is exactly this tall, metres (after rotation).
+   * Use this when you don't know the file's units. null = use modelScale instead.
+   */
+  modelHeightM: number | null;
+  /** Uniform scale applied to the loaded model when modelHeightM is null. 1 = file units are metres. */
   modelScale: number;
   /** Rotation applied to the loaded model, DEGREES, applied in x, y, z order. */
   modelRotation: { x: number; y: number; z: number };
@@ -75,6 +81,21 @@ export interface AppConfig {
   cameraFarM: number;
 
   /**
+   * Orientation smoothing, 0..1 (LocAR's smoothingFactor). Each frame the view
+   * moves (1 - this) of the way toward the latest sensor reading.
+   * Higher = steadier but laggier. LocAR's default 0.2 is almost unsmoothed.
+   */
+  orientationSmoothing: number;
+  /**
+   * GPS position smoothing time constant, seconds. New fixes are eased in over
+   * roughly this long instead of snapping, so the object glides rather than jumps.
+   * 0 = no smoothing (original behaviour).
+   */
+  gpsSmoothingSec: number;
+  /** A fix farther than this from the smoothed position is applied instantly, metres. */
+  gpsSnapDistanceM: number;
+
+  /**
    * ?debug=1&fake=N places the fake viewer this many metres SOUTH of site N
    * (1-based), so that object is straight ahead (north = -z, the default camera direction).
    */
@@ -95,13 +116,17 @@ export const config: AppConfig = {
       name: 'Site 2',
       latitude: 40.967995,
       longitude: -76.896068,
-      cubeColor: '#1e63ff', // blue, so the two cubes can't be confused; delete to use the default red
+      // Dogs sculpture instead of a cube. File: public/models/dogs.obj
+      // (+ dogs.mtl and textures alongside it, if it has them).
+      modelUrl: 'models/dogs.obj',
+      modelHeightM: 3.048, // 10 ft tall, same as the cube; change to taste
     },
   ],
 
   object: {
     groundClearanceM: 3.048, // 10 ft
     modelUrl: null,
+    modelHeightM: null,
     modelScale: 1,
     modelRotation: { x: 0, y: 0, z: 0 },
     cubeSizeM: 3.048, // 10 ft
@@ -117,6 +142,10 @@ export const config: AppConfig = {
 
   cameraHFovDeg: 80,
   cameraFarM: 5000,
+
+  orientationSmoothing: 0.85,
+  gpsSmoothingSec: 1.5,
+  gpsSnapDistanceM: 30,
 
   fakeViewerOffsetSouthM: 40,
 };

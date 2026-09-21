@@ -140,10 +140,11 @@ async function startAR(): Promise<void> {
     deviceOrientationOptions: {
       enabled: true,
       enablePermissionDialog: false, // we handled the iOS gesture above
-      smoothingFactor: 0.2,
+      smoothingFactor: config.orientationSmoothing,
     },
   });
   state.app = app;
+  if (DEBUG) (window as unknown as { __app: App }).__app = app; // for console/testing
   app.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
   // start() resolves when orientation is granted, which on most devices happens
@@ -171,7 +172,11 @@ async function startAR(): Promise<void> {
   locar.on('gpserror', (e: GeolocationPositionError) => {
     banner('error', describeGpsError(e));
   });
-  locar.on('gpsupdate', (ev: GpsReceivedEvent) => void onAcceptedFix(ev));
+  locar.on('gpsupdate', (ev: GpsReceivedEvent) => {
+    smoothCameraOnFix(app.camera); // must run first: undoes LocAR's instant jump
+    void onAcceptedFix(ev);
+  });
+  requestAnimationFrame((t) => smoothingLoop(app.camera, t));
 
   if (FAKE) {
     const fake = offsetLatLon(FAKE_SITE, -config.fakeViewerOffsetSouthM, 0);
@@ -284,6 +289,41 @@ async function onAcceptedFix(ev: GpsReceivedEvent): Promise<void> {
       `Objects placed. Nearest is ${near.site.name}, ${near.distM.toFixed(0)} m away, bearing ${bearingDeg(here, near.site).toFixed(0)}°.`,
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// GPS position smoothing
+//
+// LocAR moves the camera straight to each new fix (verified: it writes
+// camera.position.x/z in its GPS handler, then emits gpsupdate). Fixes jitter by
+// a metre or two, so objects jump about once a second. We record where LocAR
+// wanted the camera, put it back where it was, and ease toward the target each
+// frame. Height (y) is never touched — LocAR keeps it at 0.
+// ---------------------------------------------------------------------------
+const camTarget = new THREE.Vector3();
+let camSmoothed: THREE.Vector3 | null = null;
+let lastFrameT: number | null = null;
+
+function smoothCameraOnFix(cam: THREE.Camera): void {
+  camTarget.copy(cam.position);
+  if (
+    config.gpsSmoothingSec <= 0 ||
+    camSmoothed === null ||
+    camSmoothed.distanceTo(camTarget) > config.gpsSnapDistanceM
+  ) {
+    camSmoothed = camTarget.clone(); // first fix or big jump: snap
+  }
+  cam.position.copy(camSmoothed);
+}
+
+function smoothingLoop(cam: THREE.Camera, t: number): void {
+  const dt = lastFrameT === null ? 0 : Math.min((t - lastFrameT) / 1000, 0.25);
+  lastFrameT = t;
+  if (camSmoothed && config.gpsSmoothingSec > 0) {
+    camSmoothed.lerp(camTarget, 1 - Math.exp(-dt / config.gpsSmoothingSec));
+    cam.position.copy(camSmoothed);
+  }
+  requestAnimationFrame((t2) => smoothingLoop(cam, t2));
 }
 
 // ---------------------------------------------------------------------------
@@ -403,6 +443,8 @@ function debugLoop(): void {
     ['last fix ago', fix ? `${((performance.now() - state.lastFixAt) / 1000).toFixed(1)} s` : '—'],
     ['--- CAMERA', ''],
     ['camera xyz', `${fmt(cam.position.x, 2)} ${fmt(cam.position.y, 2)} ${fmt(cam.position.z, 2)}`],
+    ['gps target', `${fmt(camTarget.x, 2)} ${fmt(camTarget.y, 2)} ${fmt(camTarget.z, 2)}`],
+    ['smoothing', `orient ${config.orientationSmoothing} · gps ${config.gpsSmoothingSec} s`],
     ['cam heading', `${fmt(cameraHeadingDeg(cam), 0)}°`],
     ...siteRows,
     ['--- ORIENTATION', ''],
