@@ -1,0 +1,145 @@
+:root {
+  --fg: #fff;
+  --bg: rgba(0, 0, 0, 0.6);
+  --accent: #e53935;
+  --warn: #ffb300;
+  --error: #e53935;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+/* Black goes on <html> only. LocAR's <video> is z-index:-100; an opaque <body>
+   background paints OVER negative-z children and hides the camera feed. */
+html { background: #000; }
+body { background: transparent; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  color: var(--fg);
+  font-family: var(--font);
+  -webkit-text-size-adjust: 100%;
+  touch-action: none;
+}
+
+.hidden { display: none !important; }
+
+/* LocAR appends <video> (z-index -100) and <canvas> (z-index 999) to body. Pin the canvas. */
+body > canvas {
+  position: fixed !important;
+  inset: 0;
+  width: 100vw !important;
+  height: 100vh !important;
+  touch-action: none;
+}
+
+/* ---- landing ---- */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: #111;
+}
+.panel {
+  max-width: 420px;
+  width: 100%;
+}
+.panel h1 { font-size: 1.6rem; margin: 0 0 8px; }
+.muted { color: #bbb; line-height: 1.4; }
+.tiny { font-size: 0.75rem; }
+.preflight { list-style: none; padding: 0; margin: 12px 0; }
+.preflight li {
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+.preflight li.fatal { background: #4a1414; border-left: 4px solid var(--error); }
+.preflight li.warn  { background: #3d2e00; border-left: 4px solid var(--warn); }
+
+#start {
+  width: 100%;
+  padding: 16px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+#start:disabled { background: #555; cursor: not-allowed; }
+
+/* ---- status bar ---- */
+.status {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 1500;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+  background: var(--bg);
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+.status.warn { background: rgba(120, 80, 0, 0.75); }
+
+/* ---- banner ---- */
+.banner {
+  position: fixed;
+  top: env(safe-area-inset-top);
+  left: 8px; right: 8px;
+  z-index: 1600;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--bg);
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+.banner[data-level='warn']  { background: rgba(120, 80, 0, 0.9); }
+.banner[data-level='error'] { background: rgba(140, 20, 20, 0.92); }
+.banner button {
+  flex: none;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 1.3rem;
+  line-height: 1;
+  padding: 0 4px;
+  cursor: pointer;
+}
+
+/* ---- debug overlay ---- */
+.debug {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 64px);
+  left: 8px;
+  z-index: 1400;
+  margin: 0;
+  padding: 8px;
+  max-width: calc(100vw - 16px);
+  max-height: 55vh;
+  overflow: auto;
+  background: rgba(0, 0, 0, 0.7);
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.3;
+  white-space: pre;
+  pointer-events: none;
+}

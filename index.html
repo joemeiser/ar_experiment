@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#000000" />
+    <title>WebAR Sculpture Viewer (MVP)</title>
+  </head>
+  <body>
+    <!-- Landing screen -->
+    <div id="landing" class="overlay">
+      <div class="panel">
+        <h1>AR Sculpture Viewer</h1>
+        <p class="muted">
+          Prototype. Tap <strong>Start AR</strong>, allow camera, location and motion
+          access, then walk toward the site and hold the device up.
+        </p>
+        <ul id="preflight" class="preflight"></ul>
+        <button id="start" type="button">Start AR</button>
+        <p class="tiny muted" id="build-info"></p>
+      </div>
+    </div>
+
+    <!-- Status bar (during AR) -->
+    <div id="status" class="status hidden">
+      <span id="status-gps">GPS: waiting…</span>
+      <span id="status-dist">Target: —</span>
+    </div>
+
+    <!-- Warning / error banner -->
+    <div id="banner" class="banner hidden">
+      <div id="banner-text"></div>
+      <button id="banner-close" type="button" aria-label="Dismiss">×</button>
+    </div>
+
+    <!-- Debug overlay (?debug=1) -->
+    <pre id="debug" class="debug hidden"></pre>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

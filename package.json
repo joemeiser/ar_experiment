@@ -1,0 +1,27 @@
+{
+  "name": "webar-sculpture-viewer",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Location-based WebAR sculpture viewer MVP (Vite + Three.js + LocAR.js)",
+  "scripts": {
+    "dev": "vite --host",
+    "dev:https": "vite --host --mode https",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host"
+  },
+  "dependencies": {
+    "locar": "^0.2.12",
+    "three": "^0.181.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.181.0",
+    "@vitejs/plugin-basic-ssl": "^2.3.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.0"
+  },
+  "engines": {
+    "node": ">=22.12"
+  }
+}
