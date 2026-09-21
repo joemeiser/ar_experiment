@@ -68,22 +68,34 @@ Site 1 is an **estimate (±20 m)** of the midpoint between the water tower and H
 
 `cameraFarM` (5000) is the draw distance. Objects farther away are not rendered. In practice a 3 m cube is under one pixel beyond ~1 km anyway.
 
+### Smoothing
+
+Two settings in `src/config.ts` trade steadiness against lag:
+
+- `orientationSmoothing` (0.85): how much the view resists sensor jitter when you turn or tilt. Higher is steadier but slower to follow. LocAR's default of 0.2 was almost unsmoothed.
+- `gpsSmoothingSec` (1.5): new GPS fixes are eased in over about this long instead of snapping, so objects glide instead of jumping about once a second. Set it to 0 for the old behaviour. A fix more than `gpsSnapDistanceM` (30 m) away is applied instantly.
+
+The object's height is never smoothed or changed. It's fixed relative to the camera (see "How height works").
+
 ### Projection (fixed bug)
 
 LocAR's default projection is Web Mercator. Its units are metres only at the equator; at 41°N it inflates horizontal distances ×1.325, while heights and object sizes stay true. Result: every object rendered 33% too far away, too small and too low. The app now passes LocAR a local true-metre projection (`LocalMetricProjection` in `src/geo.ts`, via App's `projection` option). The debug overlay's `geo` and `scene` rows should agree; if they don't, placement is wrong.
 
-## Replace the cube with a .glb
+## Replace the cube with a model (.glb, .gltf or .obj)
 
-1. Drop the file in `public/models/`, e.g. `public/models/sculpture.glb`.
-2. In `src/config.ts`:
+1. Put the file in `public/models/`, e.g. `public/models/dogs.obj`. For an OBJ, put its `.mtl` and texture images in the same folder. Only files under `public/` are published.
+2. On the site in `src/config.ts`:
    ```ts
-   modelUrl: 'models/sculpture.glb',   // relative to the site base
-   modelScale: 1,                       // 1 unit in the file = 1 metre
-   modelRotation: { x: 0, y: 0, z: 0 }, // degrees
+   modelUrl: 'models/dogs.obj',          // relative to the site base
+   modelHeightM: 3.048,                  // make it exactly this tall; file units don't matter
+   modelRotation: { x: 0, y: 0, z: 0 },  // degrees; e.g. x: -90 if it lies on its back
    ```
-3. Placement rule (same as the cube): the model's **lowest point** after scale/rotation is placed `groundClearanceM` above the ground. You don't have to centre the model's origin yourself.
+   Set `modelHeightM: null` to use `modelScale` instead (1 = file units are metres).
+3. The model is centred on the GPS point, and its lowest point sits `groundClearanceM` above the ground.
 
-Keep files small (< 10 MB, ideally Draco/meshopt-compressed); it downloads over cellular on campus.
+Site 2 is set up for `models/dogs.obj`. If the file is missing, a red banner says so and Site 2 shows nothing.
+
+**Size:** 100k faces renders fine on current devices. A text OBJ that size is roughly 5–15 MB to download, which is slow on cellular. Converting it to a Draco-compressed .glb usually brings it to about 1 MB.
 
 ## How height works (read this)
 
